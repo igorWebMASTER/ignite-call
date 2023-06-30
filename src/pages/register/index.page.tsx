@@ -3,9 +3,11 @@ import { Button, Heading, MultiStep, Text, TextInput } from "@ignite-ui/react";
 import { ArrowRight } from "phosphor-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
+import { AxiosError } from "axios";
 import { Container, Form, FormError, Header } from "./styles";
 import { api } from "@/lib/axios";
+import { useRouter } from "next/router";
+import { useEffect } from "react";
 
 const registerFormSchema = z.object({
   username: z
@@ -26,10 +28,19 @@ export default function Register() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerFormSchema),
   });
+
+  const router = useRouter();
+
+  useEffect(() => {
+    if (router.query.username) {
+      setValue("username", String(router.query.username));
+    }
+  }, [router?.query, setValue]);
 
   async function handleRegister(data: RegisterFormData) {
     try {
@@ -38,8 +49,15 @@ export default function Register() {
         name,
         username,
       });
+
+      await router.push("/register/connect-calendar");
     } catch (err) {
-      console.log(err);
+      if (err instanceof AxiosError && err?.response?.data?.message) {
+        alert(err.response.data.message);
+        return;
+      }
+
+      console.error(err);
     }
   }
 
